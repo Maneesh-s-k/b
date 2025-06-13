@@ -4,11 +4,14 @@ import { useAuth } from '../../../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
 import { authService } from '../../../services/authService';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiZap, FiAlertTriangle } from 'react-icons/fi';
+import { jwtDecode } from 'jwt-decode';
+
+
 
 export default function Login() {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: 'demo@energy.com',
+    password: 'password',
     rememberMe: false
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -22,8 +25,6 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated) navigate(from, { replace: true });
-    // Only clear error on mount
-    // clearError();
     // eslint-disable-next-line
   }, [isAuthenticated, navigate, from]);
 
@@ -43,22 +44,33 @@ export default function Login() {
     try {
       await login(formData);
     } catch (err) {
-      // error is handled by context
+      // error handled by context
     } finally {
       setIsLoading(false);
     }
   };
 
+  const { setUser, setIsAuthenticated } = useAuth();
+
   const handleGoogleSuccess = async (response) => {
-    setGoogleError('');
-    try {
-      const result = await authService.googleAuth(response.credential);
-      if (result.success) navigate('/dashboard');
-      else setGoogleError(result.message || "Google authentication failed");
-    } catch (error) {
-      setGoogleError('Google authentication failed');
-    }
-  };
+  setGoogleError('');
+  try {
+    const userInfo = jwtDecode(response.credential);
+    console.log('Google User Info:', userInfo);
+
+    localStorage.setItem('user', JSON.stringify(userInfo));
+    
+    // 👉 Update context state manually
+    setUser(userInfo);
+    setIsAuthenticated(true);
+
+    navigate('/dashboard');
+  } catch (error) {
+    console.error('Google decode error:', error);
+    setGoogleError('Google authentication failed');
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-emerald-900">
@@ -101,7 +113,7 @@ export default function Login() {
                   onChange={handleChange}
                   className="form-input"
                   placeholder="energy@trader.com"
-                  style={{ paddingLeft: "2.5rem" }} // Add padding for icon
+                  style={{ paddingLeft: "2.5rem" }}
                 />
               </div>
             </div>
@@ -123,7 +135,7 @@ export default function Login() {
                   onChange={handleChange}
                   className="form-input"
                   placeholder="••••••••"
-                  style={{ paddingLeft: "2.5rem", paddingRight: "2.5rem" }} // Add padding for icons
+                  style={{ paddingLeft: "2.5rem", paddingRight: "2.5rem" }}
                 />
                 <button
                   type="button"
@@ -193,7 +205,6 @@ export default function Login() {
                 width={300}
                 onSuccess={handleGoogleSuccess}
                 onError={() => setGoogleError('Google authentication failed')}
-                useOneTap
                 logo_alignment="center"
                 text="signin_with"
               />

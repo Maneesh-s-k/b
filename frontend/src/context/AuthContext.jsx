@@ -122,7 +122,9 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     clearError, // Add clearError to the context value
-    checkAuthStatus
+    checkAuthStatus,
+    setUser,               
+    setIsAuthenticated 
   };
 
   return (
